@@ -1,17 +1,17 @@
 [
   {
-    "name": "row_reorders",
-    "situation": "门户重排且数量变化",
-    "observable": "按身份回读，差异暂停不误点"
+    "name": "uid_recreation",
+    "situation": "同名新UID之后旧删除回流",
+    "observable": "不删新生命周期"
   },
   {
-    "name": "unknown_outcome",
-    "situation": "受理后响应中断",
-    "observable": "查询回执或交人工，不盲重试"
+    "name": "watch_expiry",
+    "situation": "Watch位置过期410",
+    "observable": "重列举切换，不猜测版本顺序"
   },
   {
-    "name": "two_operators",
-    "situation": "同批并行且一笔待核",
-    "observable": "单笔领取且其他订单可继续"
+    "name": "namespace_forbidden",
+    "situation": "只读范围缩小到403",
+    "observable": "标受限，不伪造目录删除"
   }
 ]

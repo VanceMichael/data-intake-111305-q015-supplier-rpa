@@ -1,33 +1,62 @@
 {
   "identity_fields": [
-    "supplier",
-    "order",
-    "page_version"
+    "cluster",
+    "capture"
   ],
   "source_records": [
     {
-      "supplier": "vendor-a",
-      "order": "PO-71",
-      "page_version": 1,
-      "row": 1,
-      "quantity": 12,
-      "status": "pending"
+      "cluster": "managed-a",
+      "capture": 1,
+      "kind": "list",
+      "body": {
+        "kind": "PodList",
+        "metadata": {
+          "resourceVersion": "rv-z",
+          "continue": "page-two"
+        },
+        "items": [
+          {
+            "metadata": {
+              "uid": "uid-old",
+              "name": "worker",
+              "namespace": "lab",
+              "resourceVersion": "rv-y"
+            }
+          }
+        ]
+      }
     },
     {
-      "supplier": "vendor-a",
-      "order": "PO-72",
-      "page_version": 1,
-      "row": 2,
-      "quantity": 21,
-      "status": "pending"
+      "cluster": "managed-a",
+      "capture": 2,
+      "kind": "watch",
+      "body": {
+        "type": "ADDED",
+        "object": {
+          "metadata": {
+            "uid": "uid-new",
+            "name": "worker",
+            "namespace": "lab",
+            "resourceVersion": "rv-a"
+          }
+        }
+      }
     },
     {
-      "supplier": "vendor-a",
-      "order": "PO-71",
-      "page_version": 2,
-      "row": 2,
-      "quantity": 14,
-      "status": "pending"
+      "cluster": "managed-a",
+      "capture": 3,
+      "kind": "watch",
+      "body": {
+        "type": "DELETED",
+        "object": {
+          "metadata": {
+            "uid": "uid-old",
+            "name": "worker",
+            "namespace": "lab",
+            "resourceVersion": "rv-old"
+          }
+        }
+      }
     }
   ],
   "portal": {
@@ -35,8 +64,64 @@
   },
   "routes": {
     "/feed": {
-      "body": "<!doctype html><html lang='zh'><meta charset='utf-8'><title>来源目录</title><body>\n<article><h2>PO-71</h2>\n<dl><dt>supplier</dt><dd>vendor-a</dd><dt>order</dt><dd>PO-71</dd><dt>page_version</dt><dd>1</dd><dt>row</dt><dd>1</dd><dt>quantity</dt><dd>12</dd><dt>status</dt><dd>pending</dd></dl>\n<form action=\"/portal/submit\" method=\"post\"><input type=\"hidden\" name=\"csrf\" value=\"form-2026-b\"><input name=\"id\" value=\"PO-71\"><button type=\"submit\">确认</button></form>\n</article>\n<article><h2>PO-72</h2>\n<dl><dt>supplier</dt><dd>vendor-a</dd><dt>order</dt><dd>PO-72</dd><dt>page_version</dt><dd>1</dd><dt>row</dt><dd>2</dd><dt>quantity</dt><dd>21</dd><dt>status</dt><dd>pending</dd></dl>\n<form action=\"/portal/submit\" method=\"post\"><input type=\"hidden\" name=\"csrf\" value=\"form-2026-b\"><input name=\"id\" value=\"PO-72\"><button type=\"submit\">确认</button></form>\n</article>\n<article><h2>PO-71</h2>\n<dl><dt>supplier</dt><dd>vendor-a</dd><dt>order</dt><dd>PO-71</dd><dt>page_version</dt><dd>2</dd><dt>row</dt><dd>2</dd><dt>quantity</dt><dd>14</dd><dt>status</dt><dd>pending</dd></dl>\n<form action=\"/portal/submit\" method=\"post\"><input type=\"hidden\" name=\"csrf\" value=\"form-2026-b\"><input name=\"id\" value=\"PO-71\"><button type=\"submit\">确认</button></form>\n</article>\n<script type=\"application/json\" id=\"source-records\">[{\"supplier\": \"vendor-a\", \"order\": \"PO-71\", \"page_version\": 1, \"row\": 1, \"quantity\": 12, \"status\": \"pending\"}, {\"supplier\": \"vendor-a\", \"order\": \"PO-72\", \"page_version\": 1, \"row\": 2, \"quantity\": 21, \"status\": \"pending\"}, {\"supplier\": \"vendor-a\", \"order\": \"PO-71\", \"page_version\": 2, \"row\": 2, \"quantity\": 14, \"status\": \"pending\"}]</script></body></html>",
-      "content_type": "text/html; charset=utf-8",
+      "json": {
+        "items": [
+          {
+            "cluster": "managed-a",
+            "capture": 1,
+            "kind": "list",
+            "body": {
+              "kind": "PodList",
+              "metadata": {
+                "resourceVersion": "rv-z",
+                "continue": "page-two"
+              },
+              "items": [
+                {
+                  "metadata": {
+                    "uid": "uid-old",
+                    "name": "worker",
+                    "namespace": "lab",
+                    "resourceVersion": "rv-y"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "cluster": "managed-a",
+            "capture": 2,
+            "kind": "watch",
+            "body": {
+              "type": "ADDED",
+              "object": {
+                "metadata": {
+                  "uid": "uid-new",
+                  "name": "worker",
+                  "namespace": "lab",
+                  "resourceVersion": "rv-a"
+                }
+              }
+            }
+          },
+          {
+            "cluster": "managed-a",
+            "capture": 3,
+            "kind": "watch",
+            "body": {
+              "type": "DELETED",
+              "object": {
+                "metadata": {
+                  "uid": "uid-old",
+                  "name": "worker",
+                  "namespace": "lab",
+                  "resourceVersion": "rv-old"
+                }
+              }
+            }
+          }
+        ]
+      },
       "headers": {
         "ETag": "feed-1"
       }
@@ -72,16 +157,56 @@
       "body": "partial",
       "truncate": true
     },
+    "/api/v1/pods": {
+      "json": {
+        "kind": "PodList",
+        "metadata": {
+          "resourceVersion": "rv-z",
+          "continue": "page-two"
+        },
+        "items": []
+      }
+    },
+    "/api/v1/watch": {
+      "status": 410,
+      "json": {
+        "kind": "Status",
+        "code": 410,
+        "reason": "Expired"
+      }
+    },
+    "/api/v1/namespaces/restricted/pods": {
+      "status": 403,
+      "json": {
+        "kind": "Status",
+        "code": 403,
+        "reason": "Forbidden"
+      }
+    },
     "/observations/1": {
       "json": {
         "items": [
           {
-            "supplier": "vendor-a",
-            "order": "PO-71",
-            "page_version": 1,
-            "row": 1,
-            "quantity": 12,
-            "status": "pending"
+            "cluster": "managed-a",
+            "capture": 1,
+            "kind": "list",
+            "body": {
+              "kind": "PodList",
+              "metadata": {
+                "resourceVersion": "rv-z",
+                "continue": "page-two"
+              },
+              "items": [
+                {
+                  "metadata": {
+                    "uid": "uid-old",
+                    "name": "worker",
+                    "namespace": "lab",
+                    "resourceVersion": "rv-y"
+                  }
+                }
+              ]
+            }
           }
         ]
       }
@@ -90,12 +215,20 @@
       "json": {
         "items": [
           {
-            "supplier": "vendor-a",
-            "order": "PO-72",
-            "page_version": 1,
-            "row": 2,
-            "quantity": 21,
-            "status": "pending"
+            "cluster": "managed-a",
+            "capture": 2,
+            "kind": "watch",
+            "body": {
+              "type": "ADDED",
+              "object": {
+                "metadata": {
+                  "uid": "uid-new",
+                  "name": "worker",
+                  "namespace": "lab",
+                  "resourceVersion": "rv-a"
+                }
+              }
+            }
           }
         ]
       }
@@ -104,12 +237,20 @@
       "json": {
         "items": [
           {
-            "supplier": "vendor-a",
-            "order": "PO-71",
-            "page_version": 2,
-            "row": 2,
-            "quantity": 14,
-            "status": "pending"
+            "cluster": "managed-a",
+            "capture": 3,
+            "kind": "watch",
+            "body": {
+              "type": "DELETED",
+              "object": {
+                "metadata": {
+                  "uid": "uid-old",
+                  "name": "worker",
+                  "namespace": "lab",
+                  "resourceVersion": "rv-old"
+                }
+              }
+            }
           }
         ]
       }
