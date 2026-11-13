@@ -1,0 +1,17 @@
+[
+  {
+    "name": "row_reorders",
+    "situation": "门户重排且数量变化",
+    "observable": "按身份回读，差异暂停不误点"
+  },
+  {
+    "name": "unknown_outcome",
+    "situation": "受理后响应中断",
+    "observable": "查询回执或交人工，不盲重试"
+  },
+  {
+    "name": "two_operators",
+    "situation": "同批并行且一笔待核",
+    "observable": "单笔领取且其他订单可继续"
+  }
+]
