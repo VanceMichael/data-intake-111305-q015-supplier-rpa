@@ -1,0 +1,36 @@
+{
+  "page_limit": 2,
+  "forbidden_namespaces": [],
+  "objects": [
+    {
+      "namespace": "lab",
+      "name": "worker",
+      "uid": "uid-old",
+      "spec": {"role": "batch", "generation": 1}
+    },
+    {
+      "namespace": "lab",
+      "name": "clock",
+      "uid": "uid-clock",
+      "spec": {"role": "cron"}
+    },
+    {
+      "namespace": "lab",
+      "name": "probe",
+      "uid": "uid-probe",
+      "spec": {"role": "probe"}
+    },
+    {
+      "namespace": "restricted",
+      "name": "locked",
+      "uid": "uid-locked",
+      "spec": {"role": "sealed"}
+    },
+    {
+      "namespace": "ops",
+      "name": "agent",
+      "uid": "uid-agent",
+      "spec": {"role": "agent"}
+    }
+  ]
+}

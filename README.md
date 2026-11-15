@@ -35,6 +35,21 @@ python3 -m supplier_rpa capture --base-url http://127.0.0.1:实际端口 --archi
 
 归档库只追加来源观察，不用最后一条响应覆盖先前响应。`archive.py` 管理原始内容及完整性，`client.py` 执行一次请求，`decoding.py` 负责来源格式解码，`origin.py` 提供协议演练。业务解释可与原始接收独立演进。
 
+## Kubernetes List / Watch 目录接入
+
+在原始 HTTP 接收之上，`kubesim.py` 提供本地 Kubernetes API 子集模拟器（分页 List、NDJSON Watch、410 压缩、403 受限，无需外部集群），`kubeclient.py` 执行只读 List/Watch，`catalog.py` 持久化目录状态与证据链，`ingestor.py` 编排轮次、分页交接、Watch 续接与栅栏切换。核心边界：
+
+- 身份按 `(cluster, uid)` 保留对象生命期，name 只是当前定位；删除按 UID 命中，同名重建与旧连接迟到删除互不影响。
+- 每轮重列举独立成 round，未完成的分页不会被宣布为全量；Watch 事件按轮次栅栏化，旧连接回流只入审计不进当前视图。
+- resourceVersion 全程按不透明标识存取与回传，禁止数值/字典序比较；410 必须全新 List 重建目录，不猜版本号；BOOKMARK 只表示进度。
+- 403 记为采集范围受限，保留该范围旧对象，不伪造删除；覆盖表与溯源表可回答“哪些范围还没有覆盖证据”和“每个对象来自哪次 List/Watch”。
+
+```sh
+python3 -m supplier_rpa kube-demo
+```
+
+演示在临时库上完成首轮分页 List、同名对象删除重建、压缩后 410 重列举、受限 namespace 403 四个环节，并输出当前视图、按名称的 UID 生命期、覆盖证据、轮次与溯源。加 `--archive`/`--catalog` 可把两个 SQLite 库落到指定路径复查。
+
 ## 开发资料
 
 来源协议见 `docs/source-protocol.md`，领域观察关系见 `tests/test_source_contract.py`。`fixtures/business_cases.json` 保存业务侧关注的交错情况及可观察口径；基础版测试验证的是原始采集和协议，不代表业务处理已经具备这些能力。所有条目、机构、文件内容和门户回执均为本地合成资料，不包含真实用户身份。

@@ -27,3 +27,26 @@
 ## 领域接入契约
 
 采用Kubernetes只读List、Watch、Status响应子集。resourceVersion按本项目不透明字符串契约处理，禁止按数值或字典序推导先后。模拟器通过固定路由及响应序列提供410和403，不需要真实kubeconfig，不读取Secrets，也不提交任何集群变更。
+
+### 身份与轮次
+
+- 对象稳定身份是 `(cluster, uid)`。name 与 namespace 只是当前定位，可被后续观察更新；删除严格按 UID 命中，同名对象删除后重建会得到两条独立生命期，旧 Watch 的迟到删除不会抹掉新 UID。
+- 每次（重）列举开启一个新的 round，Watch 连接绑定 round。晋升新轮次时旧连接全部栅栏化，旧连接回流的事件只进入 `staged_events`（`stale=1`）作为审计证据，不写入当前对象视图，因此重启与旧连接回流都不会把不同轮次的对象混入当前视图。
+
+### List 分页与事件交接
+
+- 一轮 List 由各 scope 的分页组成，跟随服务端 `continue` 令牌，不自行推断偏移；同一快照所有页的 resourceVersion 必须相等，否则整轮判失败。
+- 任何一页失败、缺失 resourceVersion 或快照版本漂移，整轮标记 `failed`：旧目录保持为当前视图，未完成的分页不会被宣布为全量。
+- 重列举可先把 Watch 挂在旧检查点上，分页期间到达的事件进入暂存表；晋升前按到达顺序回放，按 `(uid, resourceVersion)` 相等去重，不做版本大小比较。重列举后权威续接点是新 List 快照的 resourceVersion。
+
+### Watch 续接与 410
+
+- 干净断连时凭最后一个 BOOKMARK/事件携带的不透明 resourceVersion 原样续接。
+- 收到 410 Gone 时不猜任何版本号、不重试旧 token，直接开始一轮全新 List 重建有依据的目录。
+- BOOKMARK 只表示进度（更新 resume token 并留证据），不是业务对象，不会产生或覆盖任何目录对象。
+
+### 采集范围与覆盖证据
+
+- 某 namespace 返回 403 时记为 `restricted` 覆盖证据，该 scope 内旧对象保留为 present，不参与重列举对账删除。
+- `scope_coverage` 记录每个 scope 在当前轮次是 covered 还是 restricted；没有任何记录的 scope 即“尚无覆盖证据”，归档人员可直接识别未覆盖范围。
+- `object_provenance` 记录每个对象每一次观察来自哪次 List 页（page_id）或哪条 Watch 事件（staged_event_id/connection_id），并回链到原始归档 capture，可逐条核对来源报文。
