@@ -35,6 +35,31 @@ python3 -m supplier_rpa capture --base-url http://127.0.0.1:实际端口 --archi
 
 归档库只追加来源观察，不用最后一条响应覆盖先前响应。`archive.py` 管理原始内容及完整性，`client.py` 执行一次请求，`decoding.py` 负责来源格式解码，`origin.py` 提供协议演练。业务解释可与原始接收独立演进。
 
+## Kubernetes 目录接入（只读 List/Watch）
+
+`kube_sim.py` 提供本地 Kubernetes API 模拟器（分页 List、流式 Watch、BOOKMARK、410/403 与测试管控端点），`kube_client.py` 是只发 GET 的流式客户端，`catalog.py` 是目录状态机。设计边界见 `docs/catalog-design.md`，要点：
+
+- 对象身份是 `(cluster, uid)`，名称只是当前定位；同名重建产生独立生命期，旧 UID 的迟到删除抹不掉新对象。
+- 一次全量列举是一个轮次：分页对象先进暂存区，所有覆盖范围分页完整后才在单事务内切换目录；任何一页失败则整轮废弃，旧视图继续有效，半成品不会被宣布为全量。
+- List 与 Watch 的交接位置只取首页快照 resourceVersion；RV 全程按不透明标识保存、相等判断、原样回传，禁止数值或字典序比较。
+- Watch 断线用已保存的进度 RV 续接；收到 410 不猜测版本号，而是重新列举出有证据的新目录再原子切换。
+- 旧轮次连接被围栏：迟到事件只入证（`fence_reason='stale_round_connection'`）不应用；BOOKMARK 只更新进度，不产生业务对象。
+- 403 范围标记 `restricted` 并保留证据，其中旧对象不参与删除对账；`coverage` 显式展示 `restricted` 与 `never_covered` 范围。
+- 每个对象可溯源到具体 List 分页或 Watch 事件，目录证据通过 `capture_id` 关联原始 HTTP 归档。
+
+```sh
+python3 -m supplier_rpa kube-demo
+python3 -m supplier_rpa kube-serve            # 另开终端
+python3 -m supplier_rpa kube-sync --base-url http://127.0.0.1:端口 --cluster managed-a \
+    --catalog .runtime/catalog.sqlite3 --archive .runtime/raw.sqlite3 \
+    --scope cluster --scope namespace:restricted
+python3 -m supplier_rpa kube-query object   --catalog .runtime/catalog.sqlite3 --cluster managed-a --uid <UID>
+python3 -m supplier_rpa kube-query round    --catalog .runtime/catalog.sqlite3 --cluster managed-a --round-id <轮次>
+python3 -m supplier_rpa kube-query coverage --catalog .runtime/catalog.sqlite3 --cluster managed-a --scope cluster
+```
+
+`kube-demo` 在临时目录内完成分页列举、同名重建、410 重列举、旧连接围栏与 403 受限的完整演练，结束自动清理。契约测试见 `tests/test_catalog_contract.py`，对应 `fixtures/business_cases.json` 的三个业务样例。
+
 ## 开发资料
 
 来源协议见 `docs/source-protocol.md`，领域观察关系见 `tests/test_source_contract.py`。`fixtures/business_cases.json` 保存业务侧关注的交错情况及可观察口径；基础版测试验证的是原始采集和协议，不代表业务处理已经具备这些能力。所有条目、机构、文件内容和门户回执均为本地合成资料，不包含真实用户身份。

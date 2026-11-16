@@ -27,3 +27,11 @@
 ## 领域接入契约
 
 采用Kubernetes只读List、Watch、Status响应子集。resourceVersion按本项目不透明字符串契约处理，禁止按数值或字典序推导先后。模拟器通过固定路由及响应序列提供410和403，不需要真实kubeconfig，不读取Secrets，也不提交任何集群变更。
+
+完整的本地模拟器与采集状态机由 `supplier_rpa/kube_sim.py`、`kube_client.py`、`catalog.py` 实现，边界设计见 `docs/catalog-design.md`：
+
+- List：`GET /api/v1/pods` 与 `GET /api/v1/namespaces/{ns}/pods`，支持 `limit` 与 `continue` 分页；首页返回快照专属 resourceVersion，同轮各页共享同一快照，页间 RV 不一致或分页失败时整轮废弃。
+- Watch：`GET /api/v1/watch/pods` 与命名空间变体，行分隔 JSON 流，支持 BOOKMARK 心跳、流内 ERROR（410 Expired）与连接断开；未知 resourceVersion 直接 410。
+- 403：`namespace/restricted` 的 List 与 Watch 均拒绝，采集器据此把范围标记为 restricted，不伪造删除。
+- 管控端点 `POST /__admin__/{mutate,inject,expire,drop,forbid,flags}` 仅供测试编排（注入迟到事件、触发 410/断线、切换授权），采集器从不调用；采集流量经测试断言全部为 GET。
+- 原始 HTTP 响应仍由 `Archive` 逐条归档，目录中的分页与事件证据通过 `capture_id` 回链到原始正文。
